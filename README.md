@@ -17,13 +17,14 @@ El objetivo es implementarlo de principio a fin, compararlo con kernels clásico
 
 ## Estructura del repositorio
 
-| Carpeta | Contenido |
+| Archivo | Contenido |
 |---|---|
-| `cuaderno-tfg/` | Cuaderno de investigación: teoría de SVM, kernels, hoja de ruta del trabajo |
-| `cuaderno-cuantica/` | Apuntes de computación cuántica (curso de IBM, lecciones 1–3), en LaTeX y PDF, con sus figuras |
-| `notebooks-qiskit/` | Experimentos en Qiskit de cada lección |
-| `svm/` | Implementaciones propias de la SVM (primal y dual) |
-| `reuniones/` | Material de las reuniones con el tutor |
+| `cuaderno_tfg.tex` | Cuaderno de investigación: teoría de SVM, kernels, hoja de ruta del trabajo |
+| `cuaderno_cuantica.tex` / `.pdf` | Apuntes de computación cuántica (curso de IBM, lecciones 1–3) |
+| `*.png` | Figuras del cuaderno de cuántica (circuitos e histogramas generados con Qiskit) |
+| `qiskit_leccion1-3.ipynb` | Experimentos en Qiskit de cada lección |
+| `2026-10-02_guion.pdf` | Guion de la reunión del 2 de octubre con el tutor |
+| `requirements.txt` | Librerías necesarias para ejecutar los notebooks |
 
 ## Estado
 
