@@ -1,0 +1,9 @@
+qiskit>=2.1
+qiskit-machine-learning
+numpy
+scipy
+matplotlib
+pylatexenc
+scikit-learn
+pandas
+jupyter
