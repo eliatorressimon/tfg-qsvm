@@ -1,11 +1,22 @@
+"""
+SVM lineal de margen suave resuelta en el primal por descenso de subgradiente.
+
+Datos: Banknote Authentication (UCI), con dos variables (varianza y asimetría)
+para poder dibujar la frontera en el plano. Teoría en la sección 2.1 de
+apuntes/cuaderno_tfg/cuaderno_tfg.tex.
+
+Uso:  python svm/svm_primal.py
+"""
 
 import numpy as np
 import os
 import matplotlib.pyplot as plt
 
 carpeta_actual = os.path.dirname(os.path.abspath(__file__))
+carpeta_repo = os.path.dirname(carpeta_actual)
 
-ruta_archivo = os.path.join(carpeta_actual, 'billetes.csv')
+ruta_archivo = os.path.join(carpeta_repo, 'datos', 'billetes.csv')
+ruta_figura = os.path.join(carpeta_repo, 'apuntes', 'cuaderno_tfg', 'svmpython.png')
 
 # Leemos el archivo directamente a una matriz matemática
 matriz_datos = np.loadtxt(ruta_archivo, delimiter=',')
@@ -45,7 +56,7 @@ for epoca in range(iteraciones):
             derivada_b = 0
         else:
             # El punto está mal clasificado o pisando el margen 
-            derivada_w = 2 * parametro_lambda * w - np.dot(y[i], x_i)
+            derivada_w = 2 * parametro_lambda * w - y[i] * x_i
             derivada_b = -y[i]
             
         # Actualizamos las variables restando la derivada (Descenso de Gradiente)
@@ -75,15 +86,22 @@ plt.plot(x_recta, y_recta, 'k-', linewidth=2, label='Hiperplano Separador')
 plt.plot(x_recta, y_margen_pos, 'k--', alpha=0.5, label='Margen (+1)')
 plt.plot(x_recta, y_margen_neg, 'k--', alpha=0.5, label='Margen (-1)')
 
-# 5. Ajustes estéticos del gráfico
+# Ajustes estéticos del gráfico
 plt.ylim(np.min(X[:, 1]) - 2, np.max(X[:, 1]) + 2) # Limitamos la vista para que no se aleje mucho
 
 plt.xlabel("Varianza de la imagen")
 plt.ylabel("Asimetría de la imagen")
 plt.legend(loc='lower left')
 plt.grid(True, linestyle='--', alpha=0.6)
-plt.show()
 
 print(f"Ecuación del Hiperplano: ({w[0]:.4f})*x1 + ({w[1]:.4f})*x2 + ({b:.4f}) = 0")
 print(f"Vector de Pesos (w):     [{w[0]:.4f}, {w[1]:.4f}]")
 print(f"Sesgo / Bias (b):        {b:.4f}")
+
+# Precisión sobre los datos de entrenamiento
+precision = np.mean(np.sign(X @ w + b) == y)
+print(f"Precisión (entrenamiento): {precision:.4f}")
+
+# Guardamos la figura que usa el cuaderno del TFG y la mostramos
+plt.savefig(ruta_figura, dpi=150, bbox_inches='tight')
+plt.show()
