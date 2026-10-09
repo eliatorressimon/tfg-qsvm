@@ -2,7 +2,7 @@
 
 Trabajo de Fin de Grado del Grado en Matemáticas, Universidad Complutense de Madrid.
 
-**Autora:** Elia Torres Simón · **Tutor:** Luis Fernando Llana Díaz · **Entrega prevista:** febrero de 2027 (trabajo en curso)
+**Autora:** Elia Torres Simón · **Tutor:** Luis Fernando Llana Díaz · **Entrega prevista:** julio de 2027 (trabajo en curso)
 
 > **In English.** Bachelor's thesis in Mathematics (Complutense University of Madrid) on *quantum kernel methods*: support vector machines whose kernel is estimated on a quantum computer, following Havlíček et al. (Nature, 2019). The repository contains my own SVM implementations (primal soft-margin by subgradient descent, and the hard-margin dual solved with SLSQP, checked against scikit-learn), Qiskit notebooks verifying the quantum-computing results the thesis relies on (including a first fidelity-kernel estimate), and my study notes in LaTeX. Next steps: a soft-margin kernel SVM, a quantum kernel built with `ZZFeatureMap`, and experiments on shot noise and exponential concentration. The documentation is in Spanish.
 
