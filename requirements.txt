@@ -1,9 +1,11 @@
+# Probado con Python 3.9 y Qiskit 2.2.3
 qiskit>=2.1
 qiskit-machine-learning
 numpy
 scipy
+scikit-learn
 matplotlib
 pylatexenc
-scikit-learn
+sympy
 pandas
 jupyter
