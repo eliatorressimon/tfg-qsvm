@@ -1,0 +1,603 @@
+%=====================================================================
+% EXPLICACIÓN DESARROLLADA: Cuaderno cuántico, Capítulo 3, Sección 3.1
+% "Del circuito a la matriz, paso a paso" (I⊗H, CNOT con control Y,
+% diferencia con el CX del Capítulo 2 y composición).
+% Pensado para imprimir a doble cara: capítulos y secciones empiezan en
+% página derecha, las páginas en blanco no llevan cabecera ni número y
+% ningún bloque se parte entre páginas.
+% Todos los cálculos están comprobados en verificacion_cnot.py
+% (salida en verificacion_cnot_salida.txt).
+%=====================================================================
+\documentclass[11pt, a4paper, twoside, openright]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[spanish, es-noshorthands, es-tabla]{babel}
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, inner=3cm, outer=2cm, bindingoffset=0.5cm]{geometry}
+
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}   % sin "breakable": las cajas no se parten
+\usepackage{array}
+\usepackage{etoolbox}
+
+\usepackage{tikz}
+\usetikzlibrary{quantikz2}
+
+\usepackage{emptypage}
+
+% --- Colores: rosa claro y salmón ---
+\definecolor{rosa}{RGB}{194,24,91}
+\definecolor{rosaclaro}{RGB}{248,187,208}
+\definecolor{rosaviejo}{RGB}{199,94,128}
+\definecolor{salmon}{RGB}{233,114,76}
+
+% --- Cabeceras ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\small\nouppercase{\leftmark}}
+\fancyhead[RO]{\small\nouppercase{\rightmark}}
+\fancyfoot[LE,RO]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{rosa!60}\leaders\hrule height \headrulewidth\hfill}}
+\setlength{\headheight}{14.5pt}
+\setlength{\emergencystretch}{3em}
+\raggedbottom  % sin estirar el espacio vertical entre cajas
+
+% --- Cada sección empieza en página derecha ---
+
+
+% --- Cajas ---
+\tcbset{enhanced, fonttitle=\bfseries, before skip=8pt, after skip=8pt}
+\newtcolorbox{teoria}[1]{colback=rosa!5!white, colframe=rosa!85!black, title={#1}}
+\newtcolorbox{demo}[1][Demostración]{colback=gray!5!white, colframe=gray!65!black, title={#1}}
+\newtcolorbox{aclaracion}[1]{colback=salmon!7!white, colframe=salmon!85!black, title={#1}}
+\newtcolorbox{ejemplo}[1]{colback=rosaclaro!18!white, colframe=rosaviejo, title={#1}}
+\newtcolorbox{tfg}[1][Conexión con el TFG]{colback=rosa!9!white, colframe=rosa!55!black, title={#1}}
+\newtcolorbox{cajafigura}{colback=gray!10, colframe=gray!40, sharp corners, boxrule=0.4pt, halign=center}
+\newtcolorbox{transcripcion}{colback=white, colframe=gray!55, sharp corners, boxrule=0.5pt, title={Lo que dice la página (cuaderno, Sección 3.1)}, coltitle=black, colbacktitle=gray!15}
+
+% Paso del resumen guiado: cálculo arriba, concepto abajo
+\newcommand{\pasoguiado}[3]{%
+\begin{tcolorbox}[colback=gray!6!white,colframe=gray!55!black,title={#1}]
+#2
+\tcblower
+\small #3
+\end{tcolorbox}}
+
+% Bloque de texto que no se parte entre páginas
+\newenvironment{bloque}{\par\noindent\begin{minipage}{\linewidth}\setlength{\parskip}{4pt}}{\end{minipage}\par\medskip}
+
+% --- Notación ---
+\providecommand{\ket}[1]{|#1\rangle}
+\providecommand{\bra}[1]{\langle #1|}
+\newcommand{\X}{\mathsf{X}}
+\newcommand{\Y}{\mathsf{Y}}
+\newcommand{\CYX}{\mathrm{CNOT}_{\Y\to\X}}
+\newcommand{\I}{\mathbb{I}}
+\newcommand{\rdos}{\tfrac{1}{\sqrt2}}
+
+\lstset{
+    language=Python,
+    basicstyle=\small\ttfamily,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    rulecolor=\color{black!30},
+    keywordstyle=\color{rosa}\bfseries,
+    commentstyle=\color{gray!70!black}\itshape,
+    stringstyle=\color{salmon!80!black},
+    showstringspaces=false,
+    breaklines=true,
+    inputencoding=utf8,
+    extendedchars=true,
+    literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1 {¿}{{?`}}1 {⊗}{{$\otimes$}}1 {⟩}{{$\rangle$}}1 {·}{{$\cdot$}}1 {→}{{$\to$}}1
+}
+\lstnewenvironment{codigo}[1][]{\lstset{#1}\endgraf\noindent\minipage{\linewidth}}{\endminipage\endgraf\medskip}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=rosa, urlcolor=rosa}
+
+\title{\color{rosa}\textbf{Del circuito a la matriz}\\[4pt]\large Explicación desarrollada de la Sección~3.1 del cuaderno cuántico:\\ $\I\otimes H$, el CNOT con control $\Y$, el $CX$ del Capítulo~2 y la composición}
+\author{Notas de estudio para el TFG de Elia Torres Simón}
+\date{5 de octubre de 2026}
+
+\begin{document}
+\maketitle
+
+\chapter{El CNOT con control $\Y$ y la composición de puertas}
+
+
+%=====================================================================
+\section{La página y el ejemplo de trabajo}\label{sec:pagina}
+%=====================================================================
+
+\begin{bloque}
+Estas notas desarrollan una sola página del cuaderno cuántico (Capítulo~3, ``Del circuito a la matriz, paso a paso''). Esa página encadena cuatro ideas muy rápido, y cada una depende de la anterior:
+\begin{enumerate}
+  \item por qué la Hadamard sobre el cable de arriba es $\I\otimes H$ y no $H\otimes\I$;
+  \item qué significa $\ket{b}_\Y\ket{a}_\X\mapsto\ket{b}_\Y\ket{a\oplus b}_\X$ y cómo sale de ahí la matriz $4\times4$;
+  \item en qué se diferencia esa matriz del $CX$ del Capítulo~2;
+  \item por qué la matriz del circuito es $\CYX\cdot(\I\otimes H)$, con la primera puerta a la \textbf{derecha}.
+\end{enumerate}
+Cada idea tiene su sección. Todas usan el mismo ejemplo numérico, presentado en la Sección~\ref{sec:pagina}, y todos los cálculos están comprobados con numpy y Qiskit en \texttt{verificacion\_cnot.py} (la salida está en \texttt{verificacion\_cnot\_salida.txt}, en esta misma carpeta).
+\end{bloque}
+
+\begin{transcripcion}
+\small
+Circuito: $\Y$ arriba, $\X$ abajo; Hadamard sobre $\Y$ y después CNOT con control $\Y$ y objetivo $\X$.
+
+\textbf{1. Hadamard sobre $\Y$.} [\dots] Como $\Y$ es el factor de la derecha, la operación es $\I\otimes H$. Obsérvese que es $\I\otimes H$ y \textbf{no} $H\otimes\I$: la $H$ va a la derecha porque actúa sobre el cable de arriba.
+
+\textbf{2. CNOT con control $\Y$ y objetivo $\X$.} Actúa como $\ket{b}_\Y\ket{a}_\X\mapsto\ket{b}_\Y\ket{a\oplus b}_\X$. Escrito en el orden $(\X,\Y)$, es decir, $\ket{ab}\mapsto\ket{(a\oplus b)\,b}$:
+\[
+\ket{00}\mapsto\ket{00},\quad \ket{01}\mapsto\ket{11},\quad \ket{10}\mapsto\ket{10},\quad \ket{11}\mapsto\ket{01},
+\qquad
+\begin{pmatrix} 1&0&0&0\\0&0&0&1\\0&0&1&0\\0&1&0&0\end{pmatrix}.
+\]
+Es el CNOT con el control en el qubit \textbf{derecho}, distinto del $CX$ del Capítulo~2 (que tenía el control a la izquierda). Lo denotaremos $\CYX$.
+
+\textbf{3. Composición.} La operación del circuito completo es el producto, con la primera operación a la derecha:
+\[
+U = \begin{pmatrix} 1&0&0&0\\0&0&0&1\\0&0&1&0\\0&1&0&0\end{pmatrix}
+\frac{1}{\sqrt2}\begin{pmatrix} 1&1&0&0\\1&-1&0&0\\0&0&1&1\\0&0&1&-1\end{pmatrix}
+= \frac{1}{\sqrt2}\begin{pmatrix} 1&1&0&0\\0&0&1&-1\\0&0&1&1\\1&-1&0&0\end{pmatrix}.
+\]
+\end{transcripcion}
+
+\begin{cajafigura}
+\begin{quantikz}
+\lstick{$\Y$ (cable de arriba, $q_0$)} & \gate{H} & \ctrl{1} & \\
+\lstick{$\X$ (cable de abajo, $q_1$)} & & \targ{} &
+\end{quantikz}
+
+\smallskip
+\small El circuito de la página. Se lee de izquierda a derecha: primero $H$ sobre $\Y$, después el CNOT.
+\end{cajafigura}
+
+\begin{teoria}{Recordatorio: cómo se numeran los cuatro estados de la base}
+El par se ordena $(\X,\Y)$ y escribimos $\ket{ab}=\ket{a}_\X\otimes\ket{b}_\Y$: el \textbf{primer} bit es el valor de $\X$ y el \textbf{segundo} el de $\Y$. Con el orden lexicográfico del Capítulo~2, cada estado de la base ocupa una coordenada del vector de $\mathbb{C}^4$ (numeramos las coordenadas de $1$ a $4$, igual que las filas de las matrices en la página):
+\[
+\renewcommand{\arraystretch}{1.25}
+\begin{array}{c|cccc}
+\text{estado} & \ket{00} & \ket{01} & \ket{10} & \ket{11}\\ \hline
+\text{valor de } \X\ (a) & 0&0&1&1\\
+\text{valor de } \Y\ (b) & 0&1&0&1\\
+\text{coordenada } 2a+b+1 & 1&2&3&4
+\end{array}
+\]
+Observa que la \textbf{primera mitad} del vector (coordenadas 1 y 2) son los estados con $\X=0$ y la \textbf{segunda mitad} (3 y 4) los estados con $\X=1$. Dentro de cada mitad, $\Y$ va alternando $0,1$. Esta observación se usará varias veces.
+\end{teoria}
+
+\begin{ejemplo}{Ejemplo de trabajo (se usa en todas las secciones)}
+Tomamos un estado con las cuatro amplitudes distintas, para poder seguir a dónde va cada una:
+\[
+\ket{\psi} = \frac{1}{\sqrt{30}}\big(\ket{00}+2\ket{01}+4\ket{10}+3\ket{11}\big)
+= \frac{1}{\sqrt{30}}\begin{pmatrix}1\\2\\4\\3\end{pmatrix}.
+\]
+Es un estado válido: $\frac{1^2+2^2+4^2+3^2}{30}=\frac{30}{30}=1$. Para abreviar, escribiremos solo el vector de numeradores, $(1,2,4,3)$, y el factor $\frac{1}{\sqrt{30}}$ aparte.
+\end{ejemplo}
+
+%=====================================================================
+\cleardoublepage
+\section{Por qué es $\I\otimes H$ y no $H\otimes\I$}\label{sec:IH}
+%=====================================================================
+
+\begin{bloque}
+La frase de la página, ``la $H$ va a la derecha porque actúa sobre el cable de arriba'', junta dos hechos distintos. Conviene separarlos:
+\begin{enumerate}
+  \item \textbf{Una convención} (no se demuestra, se elige): el cable de arriba es $\Y=q_0$, y $\Y$ es el factor de la \textbf{derecha} del producto tensorial.
+  \item \textbf{Un teorema}: en $A\otimes B$, la matriz de la izquierda actúa sobre el factor de la izquierda y la de la derecha sobre el factor de la derecha.
+\end{enumerate}
+Juntos dan la conclusión: queremos que $H$ actúe sobre $\Y$, que es el factor derecho, así que $H$ tiene que ocupar el hueco derecho, $\I\otimes H$.
+\end{bloque}
+
+\begin{aclaracion}{La convención, en una tabla}
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{l|c|c}
+ & cable de \textbf{arriba} & cable de \textbf{abajo}\\ \hline
+sistema & $\Y$ & $\X$\\
+índice en Qiskit & $q_0$ & $q_1$\\
+posición en $\ket{a}_\X\otimes\ket{b}_\Y$ & factor \textbf{derecho} & factor \textbf{izquierdo}\\
+bit en la cadena $ab$ & segundo ($b$) & primero ($a$)
+\end{tabular}
+
+\medskip
+\raggedright
+Regla práctica del cuaderno: \textbf{leer los cables de abajo arriba es leer el producto tensorial de izquierda a derecha}. Abajo está $\X$, que va primero; arriba está $\Y$, que va segundo.
+\end{aclaracion}
+
+\begin{teoria}{Proposición (producto tensorial de matrices sobre productos de vectores)}
+Sean $A,B$ matrices $2\times2$ y $\ket{u},\ket{v}\in\mathbb{C}^2$. Entonces
+\[
+(A\otimes B)\big(\ket{u}\otimes\ket{v}\big) = A\ket{u}\otimes B\ket{v}.
+\]
+En particular, $(\I\otimes H)(\ket{u}\otimes\ket{v}) = \ket{u}\otimes H\ket{v}$: \textbf{$\X$ no cambia y $\Y$ recibe la $H$}. En cambio $(H\otimes\I)(\ket{u}\otimes\ket{v}) = H\ket{u}\otimes\ket{v}$: la $H$ la recibe $\X$.
+\end{teoria}
+
+\begin{demo}
+Por la forma por bloques del producto de Kronecker (Capítulo~2), $A\otimes B=\begin{pmatrix}\alpha_{11}B&\alpha_{12}B\\ \alpha_{21}B&\alpha_{22}B\end{pmatrix}$ y $\ket{u}\otimes\ket{v}=\begin{pmatrix}u_1\ket{v}\\u_2\ket{v}\end{pmatrix}$ (cada coordenada de $\ket u$ multiplicada por el vector $\ket v$ entero). Multiplicando por bloques:
+\[
+(A\otimes B)(\ket{u}\otimes\ket{v})
+=\begin{pmatrix}\alpha_{11}u_1 B\ket{v}+\alpha_{12}u_2 B\ket{v}\\ \alpha_{21}u_1 B\ket{v}+\alpha_{22}u_2 B\ket{v}\end{pmatrix}
+=\begin{pmatrix}(A\ket u)_1\, B\ket{v}\\ (A\ket u)_2\, B\ket{v}\end{pmatrix}
+=A\ket{u}\otimes B\ket{v},
+\]
+donde en el segundo paso se ha sacado factor común $B\ket v$ y se ha reconocido $(A\ket u)_i=\alpha_{i1}u_1+\alpha_{i2}u_2$; el último paso es otra vez la definición de $\otimes$ para vectores. \hfill$\square$
+
+\smallskip
+Como todo vector de $\mathbb{C}^4$ es combinación lineal de productos $\ket{a}\otimes\ket{b}$ y $A\otimes B$ es lineal, esto determina por completo cómo actúa $A\otimes B$.
+\end{demo}
+
+\begin{ejemplo}{Ejemplo 1: la entrada $\ket{01}$, con las dos opciones}
+La entrada $\ket{01}$ significa $\X=\ket0$, $\Y=\ket1$, es decir $\ket{0}_\X\otimes\ket{1}_\Y$.
+
+\textbf{Correcto, $\I\otimes H$:} por la proposición, $\ket0\otimes H\ket1 = \ket0\otimes\ket{-} = \rdos(\ket{00}-\ket{01})$. Con la matriz:
+\[
+\frac{1}{\sqrt2}\begin{pmatrix} 1&1&0&0\\1&-1&0&0\\0&0&1&1\\0&0&1&-1\end{pmatrix}\begin{pmatrix}0\\1\\0\\0\end{pmatrix}
+=\frac{1}{\sqrt2}\begin{pmatrix}1\\-1\\0\\0\end{pmatrix}.
+\]
+$\X$ sigue en $\ket0$ (todo está en la primera mitad del vector) y $\Y$ ha pasado de $\ket1$ a $\ket-$. Es lo que dibuja el circuito.
+
+\textbf{Incorrecto, $H\otimes\I$:} da $H\ket0\otimes\ket1 = \ket+\otimes\ket1=\rdos(\ket{01}+\ket{11})$, el vector $\rdos(0,1,0,1)^T$. Aquí $\Y$ sigue en $\ket1$ y quien ha cambiado es $\X$, que pasa a $\ket+$: sería la Hadamard en el cable de \textbf{abajo}, otro circuito.
+\end{ejemplo}
+
+\begin{aclaracion}{Cómo reconocer a simple vista sobre qué qubit actúa una matriz}
+\[
+\I\otimes H=\begin{pmatrix} H&0\\0&H\end{pmatrix},
+\qquad
+H\otimes\I=\frac{1}{\sqrt2}\begin{pmatrix} \I&\I\\ \I&-\I\end{pmatrix}
+=\frac{1}{\sqrt2}\begin{pmatrix} 1&0&1&0\\0&1&0&1\\1&0&-1&0\\0&1&0&-1\end{pmatrix}.
+\]
+Recordemos que la primera mitad del vector es $\X=0$ y la segunda $\X=1$.
+\begin{itemize}
+  \item $\I\otimes H$ es \textbf{diagonal por bloques}: aplica $H$ \textbf{dentro} de cada mitad y nunca mezcla una mitad con la otra. Por tanto no cambia $\X$; solo cambia $\Y$.
+  \item $H\otimes\I$ \textbf{mezcla las dos mitades} (coordenada 1 con 3, 2 con 4). Eso es cambiar $\X$ sin tocar $\Y$.
+\end{itemize}
+\end{aclaracion}
+
+\begin{ejemplo}{Ejemplo de trabajo: $(\I\otimes H)\ket\psi$}
+Partimos el vector de numeradores $(1,2,4,3)$ en sus dos mitades y aplicamos $H$ a cada una:
+\[
+H\begin{pmatrix}1\\2\end{pmatrix}=\frac{1}{\sqrt2}\begin{pmatrix}1+2\\1-2\end{pmatrix}=\frac{1}{\sqrt2}\begin{pmatrix}3\\-1\end{pmatrix},
+\qquad
+H\begin{pmatrix}4\\3\end{pmatrix}=\frac{1}{\sqrt2}\begin{pmatrix}4+3\\4-3\end{pmatrix}=\frac{1}{\sqrt2}\begin{pmatrix}7\\1\end{pmatrix}.
+\]
+Así, $(\I\otimes H)\ket\psi=\dfrac{1}{\sqrt{60}}(3,-1,7,1)^T$ (porque $\sqrt{30}\sqrt2=\sqrt{60}$). Comprobación: $\frac{9+1+49+1}{60}=1$.
+
+La probabilidad de $\X=1$ antes era $\frac{4^2+3^2}{30}=\frac{25}{30}$ y ahora es $\frac{7^2+1^2}{60}=\frac{50}{60}=\frac{25}{30}$: \textbf{no ha cambiado}, como debe ser, porque la puerta no toca $\X$.
+\end{ejemplo}
+
+%=====================================================================
+\cleardoublepage
+\section{El CNOT con control $\Y$ y objetivo $\X$}\label{sec:cnot}
+%=====================================================================
+
+\begin{teoria}{Qué hace, en palabras}
+``Si $\Y=1$, aplicar NOT a $\X$; si $\Y=0$, no hacer nada.'' El \textbf{control} es $\Y$ (el punto relleno, arriba) y el \textbf{objetivo} es $\X$ (el $\oplus$, abajo). El control \textbf{nunca} cambia.
+
+Con $\oplus$ la suma módulo $2$ ($0\oplus0=0$, $0\oplus1=1$, $1\oplus0=1$, $1\oplus1=0$), ``aplicar NOT a $a$ solo si $b=1$'' se escribe en una fórmula como $a\mapsto a\oplus b$: si $b=0$, $a\oplus0=a$ (no cambia); si $b=1$, $a\oplus1$ es el bit contrario.
+\end{teoria}
+
+\begin{aclaracion}{Qué significa $\ket{b}_\Y\ket{a}_\X\mapsto\ket{b}_\Y\ket{a\oplus b}_\X$}
+Esta es seguramente la línea más confusa de la página. Los \textbf{subíndices} dicen a qué sistema pertenece cada ket. Cuando cada ket lleva su etiqueta, el orden en que se escriben es solo una forma de presentarlo: $\ket{b}_\Y\ket{a}_\X$ y $\ket{a}_\X\ket{b}_\Y$ describen \textbf{el mismo estado}, ``$\X$ vale $a$ e $\Y$ vale $b$''. La página escribe $\Y$ primero solo porque es el control y está arriba en el dibujo.
+
+Lo que la fórmula dice es:
+\begin{itemize}
+  \item $\Y$ entra valiendo $b$ y sale valiendo $b$ (el control no cambia);
+  \item $\X$ entra valiendo $a$ y sale valiendo $a\oplus b$ (cambia solo si $b=1$).
+\end{itemize}
+Para pasar a vectores hay que volver al orden \textbf{fijo} $(\X,\Y)$, en el que el ket \textbf{sin} subíndices $\ket{ab}$ significa $\ket{a}_\X\ket{b}_\Y$. Colocando cada valor en su sitio:
+\[
+\ket{a}_\X\ket{b}_\Y\ \longmapsto\ \ket{a\oplus b}_\X\ket{b}_\Y,
+\qquad\text{es decir}\qquad
+\ket{ab}\ \longmapsto\ \ket{(a\oplus b)\,b}.
+\]
+En $\ket{(a\oplus b)\,b}$ el primer hueco es el nuevo valor de $\X$ y el segundo el de $\Y$. Sin subíndices, en cambio, el orden \textbf{sí} importa: $\ket{01}$ y $\ket{10}$ son estados distintos.
+\end{aclaracion}
+
+\begin{ejemplo}{Los cuatro casos, uno a uno}
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{cc|c|cc}
+$a$ ($\X$) & $b$ ($\Y$) & $a\oplus b$ & entrada $\ket{ab}$ & salida $\ket{(a\oplus b)\,b}$\\ \hline
+0&0&0& $\ket{00}$ & $\ket{00}$\\
+0&1&1& $\ket{01}$ & $\ket{11}$\\
+1&0&1& $\ket{10}$ & $\ket{10}$\\
+1&1&0& $\ket{11}$ & $\ket{01}$
+\end{tabular}
+
+\medskip
+\raggedright
+Lectura: cuando $\Y=0$ (filas 1 y 3) no pasa nada. Cuando $\Y=1$ (filas 2 y 4), el primer bit cambia y el segundo se queda. Por eso $\ket{01}$ y $\ket{11}$ se \textbf{intercambian} entre sí, y $\ket{00}$, $\ket{10}$ quedan fijos.
+\end{ejemplo}
+
+\begin{teoria}{Proposición (columnas de una matriz)}
+Si $M$ es la matriz de una aplicación lineal en la base $e_1,\dots,e_4$, la columna $j$ de $M$ es el vector $Me_j$, la imagen del $j$-ésimo vector de la base.
+\end{teoria}
+
+\begin{demo}
+$Me_j$ tiene por coordenada $i$ el valor $\sum_k M_{ik}(e_j)_k = M_{ij}$, porque $(e_j)_k$ vale $1$ si $k=j$ y $0$ en otro caso. Así, $Me_j=(M_{1j},\dots,M_{4j})^T$, que es la columna $j$. \hfill$\square$
+\end{demo}
+
+\begin{ejemplo}{De la tabla a la matriz $\CYX$}
+Usamos la tabla de coordenadas de la Sección~\ref{sec:pagina} ($\ket{00}\to1$, $\ket{01}\to2$, $\ket{10}\to3$, $\ket{11}\to4$):
+\begin{itemize}
+  \item $\ket{00}\mapsto\ket{00}$: la columna 1 es $e_1$, un $1$ en la fila 1.
+  \item $\ket{01}\mapsto\ket{11}$: la columna 2 es $e_4$, un $1$ en la fila 4.
+  \item $\ket{10}\mapsto\ket{10}$: la columna 3 es $e_3$, un $1$ en la fila 3.
+  \item $\ket{11}\mapsto\ket{01}$: la columna 4 es $e_2$, un $1$ en la fila 2.
+\end{itemize}
+Poniendo las cuatro columnas una al lado de otra:
+\[
+\CYX=\begin{pmatrix} 1&0&0&0\\0&0&0&1\\0&0&1&0\\0&1&0&0\end{pmatrix},
+\]
+la matriz de la página. Es una \textbf{matriz de permutación} (un único $1$ en cada fila y en cada columna), que intercambia las coordenadas 2 y 4.
+\end{ejemplo}
+
+\begin{teoria}{Proposición (fórmula de $\CYX$ y unitariedad)}
+\[
+\CYX = \I\otimes\ket0\bra0 + X\otimes\ket1\bra1,
+\]
+y $\CYX$ es unitaria (de hecho $\CYX^{\,2}=\I$, así que es su propia inversa).
+\end{teoria}
+
+\begin{demo}
+Basta comprobarlo sobre la base, por linealidad. Por la proposición de la Sección~\ref{sec:IH},
+\[
+\big(\I\otimes\ket0\bra0 + X\otimes\ket1\bra1\big)\ket a\ket b
+= \ket a\otimes\ket0\langle0|b\rangle + X\ket a\otimes\ket1\langle1|b\rangle.
+\]
+Si $b=0$: $\langle0|0\rangle=1$, $\langle1|0\rangle=0$, y queda $\ket a\ket0=\ket{a\oplus0}\ket0$. Si $b=1$: queda $X\ket a\ket1=\ket{a\oplus1}\ket1$. En ambos casos es $\ket{a\oplus b}\ket b$, que es la regla de la tabla.
+
+Unitariedad: aplicar la regla dos veces da $\ket{ab}\mapsto\ket{(a\oplus b)\,b}\mapsto\ket{(a\oplus b\oplus b)\,b}=\ket{ab}$, porque $b\oplus b=0$. Así $\CYX^{\,2}=\I$. Como es real y simétrica (intercambiar dos coordenadas es simétrico), $\CYX^\dagger=\CYX$ y $\CYX^\dagger\CYX=\CYX^{\,2}=\I$. \hfill$\square$
+
+\smallskip
+Compárese con la fórmula del Capítulo~2, $CX=\ket0\bra0\otimes\I+\ket1\bra1\otimes X$: los proyectores $\ket0\bra0,\ket1\bra1$ ``miran'' el qubit de control, y en $\CYX$ están en el hueco derecho porque el control es $\Y$.
+\end{demo}
+
+\begin{ejemplo}{Ejemplo de trabajo: $\CYX\ket\psi$}
+$\CYX$ intercambia las coordenadas 2 y 4, así que
+\[
+\CYX\,\frac{1}{\sqrt{30}}\begin{pmatrix}1\\2\\4\\3\end{pmatrix} = \frac{1}{\sqrt{30}}\begin{pmatrix}1\\3\\4\\2\end{pmatrix}.
+\]
+La amplitud $3$ de $\ket{11}$ pasa a $\ket{01}$, y la $2$ de $\ket{01}$ pasa a $\ket{11}$: en los estados con $\Y=1$ se ha invertido $\X$. Las amplitudes con $\Y=0$ ($1$ y $4$) no se mueven.
+\end{ejemplo}
+
+%=====================================================================
+\cleardoublepage
+\section{En qué se diferencia del $CX$ del Capítulo~2}\label{sec:cx}
+%=====================================================================
+
+\begin{bloque}
+En el Capítulo~2 el CNOT tenía el control en $\X$ (el qubit \textbf{izquierdo}) y el objetivo en $\Y$:
+\[
+CX=\ket0\bra0\otimes\I+\ket1\bra1\otimes X,\qquad CX\ket a\ket b=\ket a\ket{a\oplus b}.
+\]
+Las dos puertas hacen ``NOT controlado'', pero los papeles de los qubits están cambiados. Como el par se escribe siempre en el orden $(\X,\Y)$, eso da \textbf{matrices distintas}.
+\end{bloque}
+
+\begin{aclaracion}{Comparación lado a lado}
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{c|c|c}
+ & $CX$ (Capítulo 2) & $\CYX$ (Capítulo 3)\\ \hline
+control & $\X$ (izquierda, cable de abajo) & $\Y$ (derecha, cable de arriba)\\
+objetivo & $\Y$ & $\X$\\
+regla & $\ket{ab}\mapsto\ket{a\,(a\oplus b)}$ & $\ket{ab}\mapsto\ket{(a\oplus b)\,b}$\\
+$\ket{00}$ & $\ket{00}$ & $\ket{00}$\\
+$\ket{01}$ & $\ket{01}$ & $\ket{11}$\\
+$\ket{10}$ & $\ket{11}$ & $\ket{10}$\\
+$\ket{11}$ & $\ket{10}$ & $\ket{01}$\\
+intercambia & $\ket{10}\leftrightarrow\ket{11}$ (coord.\ 3 y 4) & $\ket{01}\leftrightarrow\ket{11}$ (coord.\ 2 y 4)\\[4pt]
+matriz &
+$\begin{pmatrix} 1&0&0&0\\0&1&0&0\\0&0&0&1\\0&0&1&0\end{pmatrix}$ &
+$\begin{pmatrix} 1&0&0&0\\0&0&0&1\\0&0&1&0\\0&1&0&0\end{pmatrix}$\\[18pt]
+en Qiskit & \texttt{qc.cx(1, 0)} & \texttt{qc.cx(0, 1)}
+\end{tabular}
+\end{aclaracion}
+
+\begin{ejemplo}{Ejemplo 2: la misma entrada, dos resultados}
+\textbf{Entrada $\ket{01}$} ($\X=0$, $\Y=1$).
+\begin{itemize}
+  \item $CX$ mira $\X$, que vale $0$: no hace nada. $CX\ket{01}=\ket{01}$.
+  \item $\CYX$ mira $\Y$, que vale $1$: invierte $\X$. $\CYX\ket{01}=\ket{11}$.
+\end{itemize}
+\textbf{Ejemplo de trabajo.} Con $\ket\psi=\frac{1}{\sqrt{30}}(1,2,4,3)^T$:
+\[
+CX\ket\psi=\frac{1}{\sqrt{30}}\begin{pmatrix}1\\2\\3\\4\end{pmatrix}
+\qquad\text{(intercambia las coordenadas 3 y 4)},
+\]
+\[
+\CYX\ket\psi=\frac{1}{\sqrt{30}}\begin{pmatrix}1\\3\\4\\2\end{pmatrix}
+\qquad\text{(intercambia las coordenadas 2 y 4)}.
+\]
+Son estados distintos, así que las dos matrices son distintas.
+\end{ejemplo}
+
+\begin{teoria}{Proposición (son la misma puerta con los qubits renombrados)}
+Sea $\mathrm{SWAP}\ket{ab}=\ket{ba}$ la puerta que intercambia los dos qubits. Entonces
+\[
+\CYX=\mathrm{SWAP}\cdot CX\cdot\mathrm{SWAP}.
+\]
+\end{teoria}
+
+\begin{demo}
+Sobre la base, leyendo de derecha a izquierda (primero el SWAP de la derecha):
+\[
+\begin{aligned}
+\ket{ab}\ &\xrightarrow{\ \mathrm{SWAP}\ }\ \ket{ba}\ \xrightarrow{\ CX\ }\ \ket{b\,(b\oplus a)}\ \xrightarrow{\ \mathrm{SWAP}\ }\ \ket{(b\oplus a)\,b}\\
+&=\ket{(a\oplus b)\,b}=\CYX\ket{ab}.
+\end{aligned}
+\]
+Como coinciden en los cuatro vectores de la base y son lineales, son iguales. \hfill$\square$
+
+\smallskip
+Interpretación: intercambiar los qubits, hacer el $CX$ (control en el primero) y deshacer el intercambio es lo mismo que hacer el CNOT con el control en el segundo. ``Qué qubit controla'' es justo lo que cambia entre las dos puertas.
+\end{demo}
+
+\begin{cajafigura}
+\begin{minipage}{0.47\linewidth}\centering
+\begin{quantikz}[row sep=0.5cm]
+\lstick{$\Y$} & & \targ{} & \\
+\lstick{$\X$} & \gate{H} & \ctrl{-1} &
+\end{quantikz}
+
+\smallskip
+\small Capítulo 2: $CX\,(H\otimes\I)$.\\ Hadamard y control en $\X$ (abajo).
+\end{minipage}\hfill
+\begin{minipage}{0.47\linewidth}\centering
+\begin{quantikz}[row sep=0.5cm]
+\lstick{$\Y$} & \gate{H} & \ctrl{1} & \\
+\lstick{$\X$} & & \targ{} &
+\end{quantikz}
+
+\smallskip
+\small Capítulo 3: $\CYX\,(\I\otimes H)$.\\ Hadamard y control en $\Y$ (arriba).
+\end{minipage}
+\end{cajafigura}
+
+\begin{bloque}
+Los dos circuitos fabrican $\ket{\phi^+}$ desde $\ket{00}$, pero no son la misma matriz: el del Capítulo~2 lleva $\ket{01}\mapsto\ket{\psi^+}$ y $\ket{10}\mapsto\ket{\phi^-}$, y el del Capítulo~3 al revés, $\ket{01}\mapsto\ket{\phi^-}$ y $\ket{10}\mapsto\ket{\psi^+}$ (se calcula en la sección siguiente). Es la nota del cuaderno ``al cambiar qué qubit hace de control, cambia qué estado de la base estándar va a cada estado de Bell''.
+\end{bloque}
+
+%=====================================================================
+\cleardoublepage
+\section{La composición: la primera operación va a la derecha}\label{sec:comp}
+%=====================================================================
+
+\begin{teoria}{Por qué el orden se invierte}
+En el circuito, $\ket\psi$ pasa primero por $\I\otimes H$ y el resultado pasa después por $\CYX$:
+\[
+\ket\psi\ \longmapsto\ (\I\otimes H)\ket\psi\ \longmapsto\ \CYX\big((\I\otimes H)\ket\psi\big).
+\]
+Por la asociatividad del producto de matrices, $\CYX\big((\I\otimes H)\ket\psi\big)=\big(\CYX(\I\otimes H)\big)\ket\psi$, así que la matriz del circuito es
+\[
+U=\CYX\,(\I\otimes H).
+\]
+La matriz que se aplica primero es la que queda \textbf{pegada al vector}, y el vector se escribe a la derecha. Por eso \textbf{el circuito se lee de izquierda a derecha y la fórmula de derecha a izquierda}.
+\end{teoria}
+
+\begin{teoria}{Proposición (multiplicar por una permutación a la izquierda reordena las filas)}
+Sea $P$ una matriz de permutación $n\times n$, y para cada fila $i$ sea $\sigma(i)$ la columna donde $P$ tiene su $1$. Entonces, para cualquier matriz $M$, la fila $i$ de $PM$ es la fila $\sigma(i)$ de $M$.
+\end{teoria}
+
+\begin{demo}
+$(PM)_{ij}=\sum_k P_{ik}M_{kj}$. En la fila $i$ de $P$ solo hay un término no nulo, $P_{i\sigma(i)}=1$, así que $(PM)_{ij}=M_{\sigma(i)j}$ para todo $j$. \hfill$\square$
+\end{demo}
+
+\begin{ejemplo}{Cálculo de $U$}
+En $\CYX$ el $1$ de cada fila está en las columnas $\sigma(1)=1$, $\sigma(2)=4$, $\sigma(3)=3$, $\sigma(4)=2$. Por la proposición, el producto $\CYX(\I\otimes H)$ se obtiene copiando las filas de $\I\otimes H$ en el orden $1,4,3,2$:
+\[
+\sqrt2\,(\I\otimes H)=\begin{pmatrix} 1&1&0&0\\1&-1&0&0\\0&0&1&1\\0&0&1&-1\end{pmatrix}
+\begin{array}{l}\leftarrow 1\\ \leftarrow 2\\ \leftarrow 3\\ \leftarrow 4\end{array}
+\ \Longrightarrow\ 
+\sqrt2\,U=\begin{pmatrix} 1&1&0&0\\0&0&1&-1\\0&0&1&1\\1&-1&0&0\end{pmatrix}
+\begin{array}{l}\leftarrow\text{era la } 1\\ \leftarrow\text{era la } 4\\ \leftarrow\text{era la } 3\\ \leftarrow\text{era la } 2\end{array}
+\]
+Es la frase de la página: ``la fila 2 del resultado es la fila 4 del segundo factor, y la fila 4 es la fila 2''.
+
+Comprobación de una entrada por la definición: $(\sqrt2\,U)_{24}=\sum_k (\CYX)_{2k}\,(\sqrt2\,\I\otimes H)_{k4}=1\cdot(\sqrt2\,\I\otimes H)_{44}=-1$, porque en la fila 2 de $\CYX$ solo $k=4$ da un término no nulo.
+\end{ejemplo}
+
+\begin{aclaracion}{El orden importa: el producto al revés da otra matriz}
+Si se multiplica en el orden equivocado, $(\I\otimes H)\,\CYX$, la permutación queda a la \textbf{derecha} y lo que reordena son las \textbf{columnas} de $\I\otimes H$ (las columnas 2 y 4 se intercambian):
+\[
+\sqrt2\,(\I\otimes H)\,\CYX=\begin{pmatrix} 1&0&0&1\\1&0&0&-1\\0&1&1&0\\0&-1&1&0\end{pmatrix}
+\ \neq\ \sqrt2\,U.
+\]
+Sobre el ejemplo de trabajo (numeradores, con factor $\frac{1}{\sqrt{60}}$): $U\ket\psi\to(3,1,7,-1)$, pero $(\I\otimes H)\CYX\ket\psi\to(4,-2,6,2)$. Este segundo resultado corresponde al circuito con las puertas al revés: primero el CNOT y después la Hadamard.
+\end{aclaracion}
+
+\begin{ejemplo}{Ejemplo de trabajo completo, paso a paso}
+Numeradores, con el factor común indicado a la derecha:
+\[
+\ket\psi:\ (1,2,4,3)\ \tfrac{1}{\sqrt{30}}
+\ \xrightarrow{\ \I\otimes H\ }\ (3,-1,7,1)\ \tfrac{1}{\sqrt{60}}
+\ \xrightarrow{\ \CYX\ }\ (3,1,7,-1)\ \tfrac{1}{\sqrt{60}}.
+\]
+\begin{itemize}
+  \item Primer paso (Sección~\ref{sec:IH}): $H$ dentro de cada mitad, $(1,2)\to(3,-1)$ y $(4,3)\to(7,1)$, salvo el factor.
+  \item Segundo paso (Sección~\ref{sec:cnot}): intercambio de las coordenadas 2 y 4, $(3,\mathbf{-1},7,\mathbf{1})\to(3,\mathbf{1},7,\mathbf{-1})$.
+\end{itemize}
+Lo mismo de una sola vez con $U$, fila por fila de $\sqrt2\,U$ por $(1,2,4,3)$:
+\[
+1+2=3,\qquad 4-3=1,\qquad 4+3=7,\qquad 1-2=-1.
+\]
+Si se midiera al final, las probabilidades de $\ket{00},\ket{01},\ket{10},\ket{11}$ serían $\frac{9}{60},\frac{1}{60},\frac{49}{60},\frac{1}{60}$, que suman $1$.
+\end{ejemplo}
+
+\begin{ejemplo}{Los cuatro estados de la base: de dónde salen los estados de Bell}
+Con $\ket{\phi^\pm}=\rdos(\ket{00}\pm\ket{11})$ y $\ket{\psi^\pm}=\rdos(\ket{01}\pm\ket{10})$:
+\[
+\renewcommand{\arraystretch}{1.5}
+\begin{array}{c|c|c}
+\text{entrada} & \text{tras } \I\otimes H & \text{tras } \CYX\\ \hline
+\ket{00}=\ket0\ket0 & \ket0\ket+=\rdos(\ket{00}+\ket{01}) & \rdos(\ket{00}+\ket{11})=\ket{\phi^+}\\
+\ket{01}=\ket0\ket1 & \ket0\ket-=\rdos(\ket{00}-\ket{01}) & \rdos(\ket{00}-\ket{11})=\ket{\phi^-}\\
+\ket{10}=\ket1\ket0 & \ket1\ket+=\rdos(\ket{10}+\ket{11}) & \rdos(\ket{10}+\ket{01})=\ket{\psi^+}\\
+\ket{11}=\ket1\ket1 & \ket1\ket-=\rdos(\ket{10}-\ket{11}) & \rdos(\ket{10}-\ket{01})=-\ket{\psi^-}
+\end{array}
+\]
+En la última columna se ha aplicado la tabla del CNOT a cada término: $\ket{00}\mapsto\ket{00}$, $\ket{01}\mapsto\ket{11}$, $\ket{10}\mapsto\ket{10}$, $\ket{11}\mapsto\ket{01}$. Estos cuatro vectores son exactamente las cuatro columnas de $U$, como dice la proposición de las columnas. El signo de $-\ket{\psi^-}$ es una fase global (nota del cuaderno).
+\end{ejemplo}
+
+\begin{tfg}
+El \texttt{ZZFeatureMap} de Havlíček et al.\ es una sucesión de capas de Hadamards, rotaciones de fase y CNOT entre pares de qubits. Para escribir a mano la matriz del circuito (y comparar con \texttt{Operator} en Qiskit) se usan exactamente las tres reglas de esta página: cada puerta de un qubit se coloca en el hueco del producto tensorial que le corresponde a su cable, cada CNOT se escribe con el control donde realmente está, y las capas se multiplican con la primera a la derecha.
+\end{tfg}
+
+%=====================================================================
+\cleardoublepage
+\section{Comprobación en Qiskit y resumen guiado}\label{sec:resumen}
+%=====================================================================
+
+\begin{bloque}
+El circuito de la página en Qiskit: $\Y$ es $q_0$ (arriba) y $\X$ es $q_1$ (abajo), así que la Hadamard es \texttt{h(0)} y el CNOT con control $\Y$ y objetivo $\X$ es \texttt{cx(0, 1)}. Extracto de \texttt{verificacion\_cnot.py}:
+\end{bloque}
+
+\begin{codigo}
+qc = QuantumCircuit(2)      # q0 = Y (arriba), q1 = X (abajo)
+qc.h(0)
+qc.cx(0, 1)
+print("¿Operator(h(0); cx(0,1)) == U?", np.allclose(Operator(qc).data, U))
+print("¿cx(0,1) == CNOT_{Y->X}?", np.allclose(Operator(q01).data, C_YX))
+print("¿cx(1,0) == CX del cap. 2?", np.allclose(Operator(q10).data, CX))
+print("¿CNOT_{Y->X} == SWAP·CX·SWAP?", np.allclose(C_YX, SWAP @ CX @ SWAP))
+\end{codigo}
+
+\begin{codigo}[backgroundcolor=\color{rosaclaro!25}, keywordstyle=\color{black}, stringstyle=\color{black}]
+¿Operator(h(0); cx(0,1)) == U? True
+¿cx(0,1) == CNOT_{Y->X}? True
+¿cx(1,0) == CX del cap. 2? True
+¿CNOT_{Y->X} == SWAP·CX·SWAP? True
+Qiskit, U|psi> * sqrt60 = [ 3.  1.  7. -1.]
+\end{codigo}
+
+\begin{bloque}
+El script comprueba también las matrices $\I\otimes H$ y $H\otimes\I$, la fórmula $\I\otimes\ket0\bra0+X\otimes\ket1\bra1$, que $\CYX\neq CX$, el producto en el orden equivocado y las columnas de $U$ (estados de Bell). Todo da \texttt{True}.
+\end{bloque}
+
+\pasoguiado{Paso 1. Qué cable es qué factor}
+{Cable de arriba $=\Y=q_0=$ factor \textbf{derecho}; cable de abajo $=\X=q_1=$ factor izquierdo. $\ket{ab}=\ket a_\X\ket b_\Y$.}
+{Convención de Qiskit: leer los cables de abajo arriba es leer el producto tensorial de izquierda a derecha.}
+
+\pasoguiado{Paso 2. Hadamard sobre $\Y$}
+{$(\I\otimes H)\ket{01}=\ket0\otimes H\ket1=\rdos(1,-1,0,0)^T$; \quad $(1,2,4,3)\tfrac{1}{\sqrt{30}}\mapsto(3,-1,7,1)\tfrac{1}{\sqrt{60}}$.}
+{$(A\otimes B)(\ket u\otimes\ket v)=A\ket u\otimes B\ket v$: cada matriz actúa en su hueco. $\I\otimes H$ es diagonal por bloques y no cambia $\X$.}
+
+\pasoguiado{Paso 3. CNOT con control $\Y$}
+{$\ket{ab}\mapsto\ket{(a\oplus b)\,b}$: intercambia $\ket{01}\leftrightarrow\ket{11}$ (coordenadas 2 y 4); \quad $(3,-1,7,1)\mapsto(3,1,7,-1)$.}
+{Los subíndices dicen qué sistema es cada ket; para la matriz se vuelve al orden $(\X,\Y)$. Columna $j$ = imagen del $j$-ésimo estado de la base.}
+
+\pasoguiado{Paso 4. No es el $CX$ del Capítulo 2}
+{$CX\ket{01}=\ket{01}$, pero $\CYX\ket{01}=\ket{11}$. \quad $\CYX=\mathrm{SWAP}\cdot CX\cdot\mathrm{SWAP}$. \quad Qiskit: \texttt{cx(0,1)} frente a \texttt{cx(1,0)}.}
+{Las dos son ``NOT controlado''; cambia qué qubit controla, y con el orden $(\X,\Y)$ fijo eso da matrices distintas.}
+
+\pasoguiado{Paso 5. Composición}
+{$U=\CYX(\I\otimes H)$; \quad $\sqrt2\,U$ tiene las filas $1,4,3,2$ de $\sqrt2\,(\I\otimes H)$; \quad $U\ket{00}=\ket{\phi^+}$.}
+{Primera operación a la derecha, pegada al vector. Una permutación a la izquierda reordena filas; a la derecha, columnas. El orden importa: $(\I\otimes H)\CYX\neq U$.}
+
+\end{document}
